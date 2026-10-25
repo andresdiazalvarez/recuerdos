@@ -1,56 +1,72 @@
-# Mapa de Recuerdos — versión 0.2
+# Mapa de Recuerdos · primera fase según especificación
 
-Aplicación personal de mapa, panorámicas y platos, preparada para el repositorio independiente `recuerdos` y GitHub Pages.
+La especificación vigente es `ESPECIFICACION_APP_MAPA_DE_RECUERDOS.md`. Sustituye los recorridos de las versiones anteriores. La pantalla inicial tiene únicamente MAPA, LUGAR y FECHA.
 
-## Iniciar y comprobar
+## Uso
 
-Node.js 20.19+ para ejecutar y compilar (las pruebas requieren Node.js 22.18+).
+- MAPA abre un único mapa mundial real, con proyección de globo cuando está disponible. Una pulsación vacía acerca y centra suavemente. Sigue pulsando para llegar a una provincia, municipio y zona cercana.
+- Dos pulsaciones rápidas en una zona vacía marcan un punto provisional y abren el cuadro de fecha; el nombre del lugar es opcional. «Crear punto y continuar» guarda el marcador y abre inmediatamente el paso «Cargar panorámica», donde se seleccionan sus fondos. No hace falta mantener después el marcador para continuar. «Cargar más tarde» conserva el punto sin panorámica.
+- Como alternativa, mantén pulsado un punto ya guardado o su fecha y suelta para abrir el selector de fotos. Selecciona uno o varios fondos, ordénalos y guarda. Se crea un registro independiente y se vuelve al mapa.
+- Una pulsación normal sobre el punto con panorámica entra directamente. Si no tiene, indica que está pendiente.
+- Arrastra horizontalmente con el dedo o ratón para girar dentro de una secuencia circular. El último fondo enlaza con el primero. No es una galería vertical ni reconstrucción 3D.
+- Toca un espacio vacío de la panorámica para elegir una fotografía individual. Responde Sí o No a «¿Quieres añadir un texto?», conserva o modifica la fecha y confirma con Enter o Guardar. Se coloca donde tocaste, con fecha y texto debajo.
+- Una pulsación en una foto existente la abre completa, sin recortarla. La X regresa a la misma dirección. Mantenerla pulsada activa la edición. Cierra el panel para mover la foto arrastrando; Editar vuelve a mostrar fecha, texto y eliminación con confirmación.
+- Opcionalmente, al colocar la foto se puede añadir una segunda imagen para una composición horizontal doble.
+- Atrás conserva el historial de centro, zoom y pantalla. Foto completa → misma panorámica; panorámica → mapa anterior; mapa local → encuadre previo; mundo → inicio. Inicio vuelve al menú.
+- Guardar esta zona conserva el centro, el zoom y el nombre de una vista del mapa. La zona aparece en LUGAR; no genera una captura de mapa.
+- LUGAR y FECHA contienen cada combinación real de lugar y fecha, sin fusionar visitas. Ambos admiten búsqueda por lugar y fecha. Seleccionar un punto viaja hasta él y entra en su panorámica si existe. Las zonas sin fecha se muestran aparte en LUGAR.
+- Para otro conjunto de fondos en un punto ya utilizado, mantén de nuevo su fecha. Se añade otra panorámica; un selector dentro de la vista permite recuperar las anteriores.
 
-```bash
+## Gestos
+
+Se distinguen 420 ms para el doble toque y 650 ms para mantener pulsado. El selector nativo se abre al soltar el toque prolongado para conservar la autorización de selección del navegador. Los arrastres cancelan el toque simple. Los puntos y fotos se pueden activar también con Enter; mantener Espacio o Enter permite la acción prolongada. Las flechas del teclado giran la panorámica; Enter en su espacio vacío añade una foto.
+
+## Datos y rendimiento
+
+IndexedDB conserva zonas, puntos, panorámicas y fotos como registros con identificadores propios. Las imágenes tienen original, versión media (hasta 1920 px) y miniatura (hasta 320 px), guardadas como Blob. Se guardan las imágenes y sus relaciones en una misma transacción: un fallo no confirma ni sustituye los recuerdos anteriores.
+
+Solo se crean botones para puntos visibles; las vistas lejanas agrupan los puntos. El visor carga los fondos visibles y vecinos, y libera sus URL de memoria al retirarlos. El original de una foto se utiliza únicamente para verla completa; los listados y fotos colocadas usan miniaturas. Los originales no se envían a terceros. El proveedor cartográfico sí recibe las solicitudes habituales de teselas.
+
+Referencia del tamaño: las miniaturas del prototipo anterior eran de 48 px. La nueva foto individual usa una anchura relativa de 0,16 del visor: 62,4 px en una pantalla de referencia de 390 px, un 30 % más. Las composiciones dobles duplican la anchura. Posición, dirección y tamaño se conservan en unidades relativas, no en píxeles absolutos.
+
+Si había datos de la versión anterior en `recuerdos-personales`, se convierten una vez al nuevo esquema, sin borrar su almacén original. Sus fotos de platos se conservan como fotografías colocadas con su texto; no se mantiene la navegación anterior de Platos.
+
+## Límites reales
+
+Los datos están en ese navegador y dispositivo. No hay servidor, cuentas, nube, sincronización ni mapa sin conexión. El mapa necesita internet y un navegador compatible con WebGL. Se aceptan JPG, PNG y WebP de hasta 25 MB por foto; HEIC debe convertirse. La continuidad es un recorrido circular de fondos normales, sin cosido perfecto. La información de país/provincia/municipio se conserva si está disponible en las etiquetas cartográficas del punto; las coordenadas, centro y zoom siempre se guardan automáticamente.
+
+La compatibilidad del selector con álbumes del teléfono y con la selección múltiple debe comprobarse también en un Android/iPhone físico. Las pruebas de escritorio o de tamaño móvil no sustituyen esa comprobación.
+
+## Desarrollo
+
+```text
 pnpm install
 pnpm dev
-pnpm build
 pnpm test
+pnpm build
 ```
 
-También se puede ejecutar con npm: `npm install`, `npm run dev` y `npm run build`. La instalación verificada utiliza pnpm, su archivo de versiones `pnpm-lock.yaml` y la autorización exclusiva del script de esbuild en `pnpm-workspace.yaml`.
+Node.js 22.18+ (verificado con Node.js 24). Los comandos equivalentes con npm también están disponibles mediante `npm run`. `pnpm-lock.yaml` fija las dependencias. `fake-indexeddb` se usa solo para pruebas, nunca en la aplicación real.
 
-## Cómo guardar un recuerdo
+- `src/App.tsx`: recorrido, historial, formularios y listados.
+- `src/WorldMap.tsx`: mapa, agrupación, zoom, distinción del doble toque y puntos fechados.
+- `src/mapTaps.ts`: distingue un toque de dos, también mediante eventos táctiles directos; cancela al arrastrar o pellizcar.
+- `src/usePress.ts`: pulsación simple frente a prolongada; cancela tras arrastrar.
+- `src/PanoramaView.tsx`: giro circular, colocación relativa y movimiento de fotos.
+- `src/model.ts`: entidades, validación y adición sin sustitución.
+- `src/storage.ts`: persistencia, migración y procesado de imágenes.
+- `src/PhotoImage.tsx`: carga de variantes y liberación de memoria.
+- `tests/mapTaps.test.mjs`: espera del toque simple, doble toque sin zoom previo, tolerancia del dedo y cancelación de gestos.
+- `tests/phase1.test.mjs`: combinaciones lugar/fecha, independencia, dirección circular y persistencia atómica.
 
-1. Abre Mapa y acércate al lugar. Pulsa «Añadir panorámica» y toca el punto exacto del mapa. En los lugares existentes también puedes pulsar «Añadir panorámica aquí».
-2. Introduce primero la fecha del recuerdo y debajo el nombre del lugar o restaurante.
-3. Selecciona una imagen panorámica JPG, PNG o WebP de hasta 25 MB y guárdala. Para añadir desde Panorámicas, introduce también latitud y longitud, o vuelve al mapa para seleccionar el punto.
-4. Recorre la panorámica deslizando la imagen y utiliza + o − para ampliar o reducir. Es un visor de fotos panorámicas horizontales, no un visor esférico de fotos 360°.
-5. Pulsa «Añadir plato», toca el punto en la panorámica, introduce nombre del plato, etiquetas opcionales y su foto, y pulsa «Guardar plato». Puedes colocar varios platos en la misma panorámica.
+Consulta `PUBLICAR.md` para actualizar GitHub Pages. El ZIP no incluye fotos personales ni datos de las pruebas del navegador. `docs/` contiene la aplicación compilada.
 
-## Buscar y volver
+## Mi ubicación · versión 0.3.2
 
-- Panorámicas y Fechas muestran una lista ordenada de más reciente a más antigua con fecha y lugar; cada visita es un recuerdo independiente, incluso si coinciden lugar y día.
-- Los filtros se pueden combinar: texto, lugar, fecha exacta o intervalo de fechas.
-- Platos aparece debajo de Panorámicas en el inicio. Busca por nombre (p. ej. «atún») o etiqueta («pescado», «arroz», «postre»), y acota por fecha o lugar. Se puede buscar sin tildes y sin distinguir mayúsculas.
-- Abrir un resultado de Platos abre su panorámica, desplaza la imagen al punto guardado, destaca la foto y muestra la ficha del plato.
-- «Ver lugar en el mapa» lleva al marcador de ese recuerdo. La ficha del mapa muestra enlaces a las panorámicas guardadas con el mismo nombre de lugar.
-- Los dos lugares de demostración originales se conservan. Sus fechas de ejemplo no cuentan como visitas personales con imágenes.
+En MAPA, pulsa «Mi ubicación», debajo de «Guardar esta zona». La primera consulta pide el permiso del navegador. El botón centra el mapa y muestra un punto azul «Estás aquí», distinto de los recuerdos, y la precisión aproximada del dispositivo. Si la señal es poco precisa se usa un encuadre más amplio.
 
-## Dónde se guardan las fotos
+La consulta se realiza solo al pulsar: no hay seguimiento continuo ni se guarda la ubicación como recuerdo. Vuelve a pulsar para actualizarla. Atrás recupera el encuadre anterior. Al salir del mapa se retira la indicación y se descartan las respuestas tardías, para que no te lleven a otra pantalla ni muestren una posición antigua.
 
-Las fotos, fechas, coordenadas y puntos se guardan en IndexedDB en el navegador de ese dispositivo. No se envían a GitHub ni se publican con la aplicación, y no se sincronizan automáticamente con otros dispositivos. Borrar los datos del navegador, utilizar otro navegador o cambiar de dominio puede impedir acceder a estos recuerdos. El almacenamiento puede fallar por falta de espacio: la aplicación no confirma el guardado si la transacción falla.
+Para usarlo desde el móvil, abre la dirección HTTPS de GitHub Pages; una dirección de red local con HTTP puede impedir la geolocalización. Si deniegas el permiso, no hay señal o se agota el tiempo, aparece una explicación y puedes intentarlo de nuevo. No se crea ni modifica ninguna panorámica al localizarte.
 
-Descarga una copia desde Panorámicas, Fechas o Platos. El archivo JSON contiene imágenes, ubicaciones y platos. Restáuralo en otro dispositivo desde el mismo apartado. La restauración añade los recuerdos que falten y conserva los existentes para evitar sobrescribir cambios. Guarda tus copias en un lugar seguro.
-
-## Publicación
-
-Consulta `PUBLICAR.md`. La carpeta `docs/` contiene la web compilada para GitHub Pages. El ZIP no incluye fotos personales, datos de pruebas guardados en el navegador, `node_modules` ni credenciales. Necesitas conexión para cargar las teselas del mapa. No se ha añadido instalación PWA ni mapa sin conexión.
-
-## Estructura
-
-- `src/main.tsx`: entrada React.
-- `src/App.tsx`: navegación y mapa MapLibre con estilo público OpenFreeMap.
-- `src/Memories.tsx`: formularios, filtros, panorámica, puntos de platos y copia de seguridad.
-- `src/memoryStore.ts`: almacenamiento, lectura de imágenes y validación de copias.
-- `src/style.css`: diseño adaptable a móvil.
-- `tests/memories.test.mjs`: filtros combinados, intervalos, búsqueda sin tildes y validación de copias.
-
-## Verificación
-
-Compilación y pruebas automatizadas. Pruebas en navegador con imágenes artificiales: crear una panorámica desde Los Caños de Meca, marcar un punto y añadir un plato, recargar y recuperar ambos, buscar por nombre sin tilde y por etiqueta, combinar lugar y fechas, abrir el punto desde un resultado, ampliar la imagen, descargar una copia y restaurar un segundo recuerdo sin perder el primero. Se ha comprobado también la pantalla de 390 × 844 píxeles. No se ha comprobado con un Android o iPhone físico. Vite avisa del tamaño de la librería cartográfica, pero la compilación termina correctamente.
+Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition

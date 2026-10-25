@@ -1,84 +1,100 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-
-import maplibregl, { type Map as MapLibreMap, type Marker } from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import WorldMap from './WorldMap';
+import PanoramaView from './PanoramaView';
+import PhotoImage from './PhotoImage';
+import { loadLibrary, persist, prepareImage } from './storage';
+import { appendPanorama, appendPhoto, dateText, EMPTY, id, normalize, PHOTO_SIZE, pointRows, validDate, WORLD, type Library, type MemoryPoint, type Panorama, type Picture, type PlacedPhoto, type View, type Zone } from './model';
 import './style.css';
-import Memories from './Memories';
-import { normalize, useMemoryStore, type Seed } from './memoryStore';
 
-type Place = { id: string; name: string; region: string; country: string; coords: [number, number]; dates: string[]; description: string };
-const sample: Place[] = [
-  {id:'canos', name:'Los Caños de Meca',region:'Cádiz',country:'España',coords:[-5.9658,36.1852],dates:['2025-08-18','2026-04-09'],description:'Lugar de demostración. Añade tu panorámica con la fecha de tu visita.'},
-  {id:'trafalgar',name:'Faro de Trafalgar',region:'Cádiz',country:'España',coords:[-6.0331,36.1809],dates:['2026-04-09','2026-09-14'],description:'Segundo lugar de demostración, independiente del primero.'}
-];
-const initialView: [number,number] = [-5.5,35.6];
-const formatDate = (s:string) => new Date(`${s}T12:00:00`).toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
-type Section = 'inicio' | 'mapa' | 'lugares' | 'fechas' | 'panoramas' | 'platos';
-export default function App(){
-  const {memories,ready,error,save} = useMemoryStore();
-  const places: Place[] = useMemo(()=>[...sample,...memories.map(m=>({id:m.id,name:m.place,region:'Recuerdo personal',country:'',coords:m.coords,dates:[m.date],description:'Panorámica guardada en este dispositivo.'}))],[memories]);
-  const [seed,setSeed] = useState<Seed|null>(null);
-  const [memoryId,setMemoryId] = useState<string|null>(null);
-  const [placing,setPlacing] = useState(false);
-  const [section,setSection] = useState<Section>('inicio');
-  const [selected,setSelected] = useState<string | null>(null);
-  const [target,setTarget] = useState<{id:string;token:number}|null>(null);
-  const [query,setQuery] = useState('');
-  const [status,setStatus] = useState('');
-  const mapRef = useRef<MapLibreMap|null>(null);
-  const mapNodeRef = useRef<HTMLDivElement|null>(null);
-  const cardRef = useRef<HTMLElement|null>(null);
-  const markersRef = useRef<Marker[]>([]);
-  const selectedPlace = places.find(x=>x.id===selected);
-  const goTo = (id:string) => {setSelected(id);setTarget({id,token:Date.now()});setSection('mapa');};
-  const openMap = () => {setSelected(null);setTarget(null);setPlacing(false);setSection('mapa');};
-  const openMemories = (next: 'panoramas'|'platos'|'fechas', id: string|null = null) => {setSeed(null);setMemoryId(id);setSection(next);};
-  const addAt = (newSeed: Seed) => {setSeed(newSeed);setMemoryId(null);setPlacing(false);setSection('panoramas');};
-  useEffect(()=>{
-    if(section!=='mapa'||!mapNodeRef.current||mapRef.current)return;
-    let disposed=false;
-    setStatus('');
-    const map = new maplibregl.Map({container:mapNodeRef.current,style:'https://tiles.openfreemap.org/styles/liberty',center:initialView,zoom:1.65,minZoom:1,maxZoom:19,attributionControl:false});
-    mapRef.current=map;
-    map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-left');
-    map.on('load',()=>{
-      if(disposed)return;
-      setStatus('');
-      try{map.setProjection({type:'globe'});}catch{setStatus('La vista esférica no está disponible con esta configuración; se muestra el mapa continuo.');}
-      markersRef.current=places.map(place=>{
-        const el=document.createElement('button');el.className='place-marker';el.type='button';el.setAttribute('aria-label',`Abrir ${place.name}`);el.innerHTML='<span></span>';
-        el.addEventListener('click',e=>{e.stopPropagation();goTo(place.id);});
-        return new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat(place.coords).addTo(map);
-      });
-    });
-    map.on('error',e=>{if(!disposed){console.error('Error cartográfico',e.error);setStatus('No se han podido cargar algunos elementos del mapa. Comprueba la conexión.');}});
-    return ()=>{disposed=true;markersRef.current.forEach(x=>x.remove());markersRef.current=[];map.remove();mapRef.current=null;};
-  },[section,places]);
-  useEffect(()=>{
-    const map=mapRef.current;
-    if(section!=='mapa'||!map)return;
-    map.getCanvas().style.cursor=placing?'crosshair':'';
-    const choose=(event: maplibregl.MapMouseEvent)=>{if(placing)addAt({place:'',coords:[event.lngLat.lng,event.lngLat.lat]});};
-    map.on('click',choose);
-    return ()=>{map.off('click',choose);};
-  },[section,placing]);
-  useEffect(()=>{
-    if(section!=='mapa'||!target||!mapRef.current)return;
-    const place=places.find(x=>x.id===target.id);if(!place)return;
-    const map=mapRef.current;
-    const jump=()=>map.flyTo({center:place.coords,zoom:13,essential:true,duration:1800,
-      offset:[-22,(50-(cardRef.current?.getBoundingClientRect().height ?? 0))/2]});
-    if(map.isStyleLoaded())jump();else map.once('load',jump);
-    return ()=>{map.off('load',jump);};
-  },[target,section,places]);
-  const back=()=>{if(selected){setSelected(null);mapRef.current?.flyTo({zoom:8,center:selectedPlace?.coords ?? [-6.0,36.2],essential:true});}else setSection('inicio');};
-  return <main>
-    {section==='inicio'&&<div className="home"><div className="earth" aria-hidden="true">◎</div><div className="hero"><p className="eyebrow">MIS LUGARES · MIS FECHAS</p><h1>Mapa de<br/>Recuerdos</h1><p className="intro">Explora el mundo y vuelve a los lugares que guardan tus recuerdos.</p></div><nav className="home-buttons"><button onClick={openMap}><span>◉</span> MAPA <b>›</b></button><button onClick={()=>openMemories('panoramas')}><span>▧</span> PANORÁMICAS <b>›</b></button><button onClick={()=>openMemories('platos')}><span>♧</span> PLATOS <b>›</b></button><button onClick={()=>setSection('lugares')}><span>⌖</span> LUGARES <b>›</b></button><button onClick={()=>openMemories('fechas')}><span>▦</span> FECHAS <b>›</b></button></nav><small>Tus panorámicas · Tus platos · Tus recuerdos</small></div>}
-    {section==='mapa'&&<div className="map-screen"><div ref={mapNodeRef} className="map"/><div className="topbar"><button aria-label="Atrás" onClick={back}>‹</button><strong>Mapa de Recuerdos</strong><button aria-label="Inicio" onClick={()=>setSection('inicio')}>⌂</button></div><div className="map-tools"><button aria-label="Acercar" onClick={()=>mapRef.current?.zoomIn()}>+</button><button aria-label="Alejar" onClick={()=>mapRef.current?.zoomOut()}>−</button><button aria-label="Ir a Cádiz" onClick={()=>mapRef.current?.flyTo({center:[-6.0,36.2],zoom:10,essential:true})}>⌖</button></div><button className="map-add" disabled={!ready} onClick={()=>{setSelected(null);setPlacing(!placing);}}>{placing ? 'Cancelar ubicación' : '+ Añadir panorámica'}</button><div className="map-hint">{placing ? 'Toca el punto del mapa para guardar tu panorámica' : 'Pulsa un marcador para abrir su lugar · Pellizca para acercar'}</div>{status&&<div className="notice" role="status">{status}<button onClick={()=>setStatus('')}>×</button></div>}{selectedPlace&&<article ref={cardRef} className="place-card"><div className="card-grip"/><p className="eyebrow">{sample.some(p=>p.id===selectedPlace.id)?'LUGAR DE DEMOSTRACIÓN':'RECUERDO PERSONAL'}</p><h2>{selectedPlace.name}</h2><p>{selectedPlace.region}{selectedPlace.country && `, ${selectedPlace.country}`}</p><p className="desc">{selectedPlace.description}</p><div className="date-tags">{selectedPlace.dates.map(d=><span key={d}>{formatDate(d)}</span>)}</div><button className="primary" disabled={!ready} onClick={()=>addAt({place:selectedPlace.name,coords:selectedPlace.coords})}>Añadir panorámica aquí</button>{memories.filter(m=>m.id===selectedPlace.id || (normalize(m.place)===normalize(selectedPlace.name))).map(m=><button className="listing-item" key={m.id} onClick={()=>openMemories('panoramas',m.id)}><span>▧ {formatDate(m.date)} · {m.place}</span><b>›</b></button>)}<button className="close-card" onClick={()=>setSelected(null)}>Cerrar ficha</button></article>}</div>}
-    {section==='lugares'&&<div className="listing"><header><button onClick={()=>setSection('inicio')} aria-label="Volver">‹</button><h1>Lugares</h1><button onClick={openMap} aria-label="Mapa">◉</button></header><p>Selecciona un lugar para viajar hasta él en el mapa.</p><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar un lugar..." aria-label="Buscar lugar"/>{places.filter(p=>normalize(`${p.name} ${p.region} ${p.country}`).includes(normalize(query))).map(p=><button className="listing-item" onClick={()=>goTo(p.id)} key={p.id}><span><strong>{p.name}</strong><small>{p.region}, {p.country}</small><small>{p.dates.map(formatDate).join(' · ')}</small></span><b>›</b></button>)}</div>}
-    {(section==='fechas'||section==='panoramas'||section==='platos')&&<Memories key={section} memories={memories} ready={ready} save={save} mode={section==='platos'?'platos':'panoramas'} seed={seed} initialId={memoryId} home={()=>setSection('inicio')} showMap={goTo}/>}
-    {error&&<div className="storage-error" role="alert">{error}</div>}
-  </main>
+type Screen = 'home' | 'map' | 'place' | 'date' | 'panorama';
+type Frame = { screen: Screen; view: View; panoramaId?: string };
+type PointDraft = { coords: [number, number]; view: View; labels: Record<string,string>; existing?: MemoryPoint };
+type PhotoDraft = { panoramaId: string; picture: Picture; direction: number; y: number; date: string };
+function BlobImage({ blob, alt }: { blob: Blob; alt: string }) {
+  const [url,setUrl]=useState('');
+  useEffect(()=>{const value=URL.createObjectURL(blob);setUrl(value);return()=>URL.revokeObjectURL(value);},[blob]);
+  return <img src={url||undefined} alt={alt}/>;
 }
-
-
+function Modal({title,close,children,locked=false,message}:{title:string;close:()=>void;children:React.ReactNode;locked?:boolean;message?:string}) {
+  const ref=useRef<HTMLDialogElement>(null);
+  useEffect(()=>{const dialog=ref.current;dialog?.showModal();return()=>dialog?.close();},[]);
+  return <dialog ref={ref} className="modal" onCancel={e=>{e.preventDefault();if(!locked)close();}}><header><h2>{title}</h2><button aria-label="Cerrar cuadro" disabled={locked} onClick={close}>×</button></header>{children}{message&&<p className="inline-error" role="alert">{message}</p>}</dialog>;
+}
+function PointForm({draft,busy,save}:{draft:PointDraft;busy:boolean;save:(date:string,name:string)=>void}) {
+  const [date,setDate]=useState(draft.existing?.date??'');const [name,setName]=useState(draft.existing?.name??'');
+  return <form onSubmit={e=>{e.preventDefault();if(validDate(date))save(date,name.trim());}}><label>Fecha del recuerdo<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>Nombre del lugar (opcional)<input maxLength={160} value={name} onChange={e=>setName(e.target.value)} placeholder="Playa, paseo, restaurante…"/></label><p className="help">La ubicación se guarda automáticamente. {draft.existing?'Mantén pulsado el punto o su fecha para cargar la panorámica.':'Al guardar la fecha, el punto queda marcado y continuarás con la carga de la panorámica.'}</p><button className="primary" disabled={busy||!validDate(date)}>{draft.existing?'Guardar fecha':'Crear punto y continuar'}</button></form>;
+}
+function PhotoForm({draft,busy,save,onError}:{draft:PhotoDraft;busy:boolean;save:(date:string,text:string,second?:Picture)=>void;onError:(message:string)=>void}) {
+  const [withText,setWithText]=useState<boolean|null>(null);const [date,setDate]=useState(draft.date);const [text,setText]=useState('');const [second,setSecond]=useState<Picture>();const [reading,setReading]=useState(false);
+  return <form onKeyDown={e=>{if(e.key==='Enter' && !(e.target instanceof HTMLInputElement && e.target.type==='file')){e.preventDefault();e.currentTarget.requestSubmit();}}} onSubmit={e=>{e.preventDefault();if(withText===null){onError('Elige Sí o No para el texto.');return;}if(validDate(date))save(date,withText?text.trim():'',second);}}><div className="preview-photo"><BlobImage blob={draft.picture.thumbnail} alt="Foto que vas a colocar"/>{second&&<BlobImage blob={second.thumbnail} alt="Segunda foto de la composición"/>}</div><fieldset><legend>¿Quieres añadir un texto?</legend><button type="button" aria-pressed={withText===true} onClick={()=>setWithText(true)}>Sí</button><button type="button" aria-pressed={withText===false} onClick={()=>setWithText(false)}>No</button></fieldset>{withText&&<label>Texto de la foto<input maxLength={300} value={text} onChange={e=>setText(e.target.value)}/></label>}<label>Fecha de la foto<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><details><summary>Composición doble horizontal (opcional)</summary><label>Segunda fotografía<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy||reading} onChange={async e=>{const file=e.target.files?.[0];if(!file)return;setReading(true);try{setSecond(await prepareImage(file));}catch(error){onError((error as Error).message);}finally{setReading(false);}}}/></label></details><button className="primary" disabled={busy||reading||withText===null||!validDate(date)}>Guardar</button></form>;
+}
+function EditPhoto({photo,busy,save,remove}:{photo:PlacedPhoto;busy:boolean;save:(date:string,text:string)=>void;remove:()=>void}) {
+  const [date,setDate]=useState(photo.date);const [text,setText]=useState(photo.text);
+  return <form onSubmit={(e:FormEvent)=>{e.preventDefault();if(validDate(date))save(date,text.trim());}}><p className="help">Arrastra la foto en la panorámica para moverla. Cambia aquí su fecha o texto.</p><label>Fecha de la foto<input required type="date" value={date} onChange={e=>setDate(e.target.value)}/></label><label>Texto de la foto<input maxLength={300} value={text} onChange={e=>setText(e.target.value)}/></label><button className="primary" disabled={busy}>Guardar cambios</button><button type="button" className="danger" disabled={busy} onClick={remove}>Eliminar foto</button></form>;
+}
+export default function App(){
+  const [library,setLibrary]=useState<Library>(EMPTY);const libraryRef=useRef(library);
+  const [ready,setReady]=useState(false);const [fatal,setFatal]=useState('');const [message,setMessage]=useState('');const [busy,setBusy]=useState(false);
+  const [screen,setScreen]=useState<Screen>('home');const [mapMounted,setMapMounted]=useState(false);
+  const viewRef=useRef<View>(WORLD);const history=useRef<Frame[]>([]);const screenRef=useRef<Screen>('home');screenRef.current=screen;
+  const [request,setRequest]=useState({view:WORLD,token:0,arrive:undefined as string|undefined});
+  const [panoramaId,setPanoramaId]=useState<string>();const panoramaRef=useRef(panoramaId);panoramaRef.current=panoramaId;
+  const directions=useRef<Record<string,number>>({});const [selected,setSelected]=useState<string|null>(null);const [fullPhoto,setFullPhoto]=useState<PlacedPhoto|null>(null);
+  const [editing,setEditing]=useState<string|null>(null);const [editPanel,setEditPanel]=useState(false);const [deleteConfirm,setDeleteConfirm]=useState(false);
+  const [pointDraft,setPointDraft]=useState<PointDraft|null>(null);const [zoneDialog,setZoneDialog]=useState(false);const [zoneName,setZoneName]=useState('');const activeZone=useRef<string|undefined>(undefined);const geoLabels=useRef<Record<string,string>>({});
+  const [panoramaStep,setPanoramaStep]=useState<string|null>(null);const [backgrounds,setBackgrounds]=useState<Picture[]>([]);const [backgroundPoint,setBackgroundPoint]=useState<string|null>(null);
+  const [photoDraft,setPhotoDraft]=useState<PhotoDraft|null>(null);
+  const [query,setQuery]=useState('');const [filterDate,setFilterDate]=useState('');
+  const backgroundInput=useRef<HTMLInputElement>(null);const photoInput=useRef<HTMLInputElement>(null);
+  const uploadPoint=useRef<string|null>(null);const uploadPosition=useRef<{panoramaId:string;direction:number;y:number;date:string}|null>(null);
+  const queue=useRef<Promise<void>>(Promise.resolve());
+  useEffect(()=>{let alive=true;loadLibrary().then(data=>{if(alive){libraryRef.current=data;setLibrary(data);setReady(true);}}).catch(error=>{if(alive)setFatal(`No se pueden abrir los recuerdos: ${(error as Error).message}`);});return()=>{alive=false;};},[]);
+  const commit=(update:(current:Library)=>Library,pictures:Picture[]=[])=>{
+    const operation=queue.current.catch(()=>{}).then(async()=>{const next=update(libraryRef.current);await persist(next,pictures);libraryRef.current=next;setLibrary(next);});queue.current=operation;return operation;
+  };
+  const run=async(action:()=>Promise<void>)=>{setBusy(true);setMessage('');try{await action();}catch(error){setMessage((error as Error).message);}finally{setBusy(false);}};
+  const snapshot=():Frame=>({screen:screenRef.current,view:structuredClone(viewRef.current),panoramaId:panoramaRef.current});
+  const go=(next:Screen)=>{history.current.push(snapshot());setScreen(next);};
+  const home=()=>{history.current=[];setSelected(null);setFullPhoto(null);setEditing(null);setEditPanel(false);setScreen('home');};
+  const restore=(frame:Frame)=>{setScreen(frame.screen);setPanoramaId(frame.panoramaId);if(frame.screen==='map'){setMapMounted(true);viewRef.current=frame.view;setRequest({view:frame.view,token:Date.now(),arrive:undefined});}};
+  const back=()=>{if(fullPhoto){setFullPhoto(null);return;}if(editing){setEditing(null);setEditPanel(false);return;}setSelected(null);const frame=history.current.pop();if(frame)restore(frame);else home();};
+  const openMap=()=>{history.current=[{screen:'home',view:WORLD}];viewRef.current=WORLD;setMapMounted(true);setRequest({view:WORLD,token:Date.now(),arrive:undefined});setScreen('map');};
+  const openPanorama=(pointId:string)=>{setMessage('');
+    const choices=libraryRef.current.panoramas.filter(p=>p.pointId===pointId);if(!choices.length){setSelected(pointId);return;}
+    history.current.push({screen:'map',view:structuredClone(viewRef.current)});setPanoramaId(choices[choices.length-1].id);setSelected(null);setEditing(null);setScreen('panorama');
+  };
+  const travel=(point:MemoryPoint)=>{history.current.push(snapshot());setSelected(point.id);setMapMounted(true);const view={...point.view,center:point.coords,zoom:Math.max(13,point.view.zoom)};setRequest({view,token:Date.now(),arrive:point.id});setScreen('map');};
+  const travelZone=(zone:Zone)=>{history.current.push(snapshot());activeZone.current=zone.id;setSelected(null);setMapMounted(true);setRequest({view:zone.view,token:Date.now(),arrive:undefined});setScreen('map');};
+  const startBackgrounds=(pointId:string)=>{if(!ready||busy)return;uploadPoint.current=pointId;if(backgroundInput.current){backgroundInput.current.value='';backgroundInput.current.click();}};
+  const startPhoto=(direction:number,y:number)=>{if(!ready||busy||!panoramaId||editing)return;const pano=libraryRef.current.panoramas.find(p=>p.id===panoramaId);const point=libraryRef.current.points.find(p=>p.id===pano?.pointId);if(!point)return;uploadPosition.current={panoramaId,direction,y,date:point.date};if(photoInput.current){photoInput.current.value='';photoInput.current.click();}};
+  const acceptBackgrounds=(files:File[],pointId:string)=>{if(!files.length)return;void run(async()=>{const pictures:Picture[]=[];for(const file of files)pictures.push(await prepareImage(file));setBackgrounds(pictures);setBackgroundPoint(pointId);setPanoramaStep(null);});};
+  const selectedPoint=library.points.find(p=>p.id===selected);
+  const panorama=library.panoramas.find(p=>p.id===panoramaId);const point=library.points.find(p=>p.id===panorama?.pointId);const photoEditing=library.photos.find(p=>p.id===editing);
+  const available=useMemo(()=>new Set(library.panoramas.map(p=>p.pointId)),[library.panoramas]);
+  const rows=pointRows(library,query,filterDate,screen==='date');
+  const remember=(view:View)=>{const last=history.current.at(-1);if(!last||last.screen!=='map'||Math.abs(last.view.zoom-view.zoom)>.01||Math.abs(last.view.center[0]-view.center[0])>.00001||Math.abs(last.view.center[1]-view.center[1])>.00001)history.current.push({screen:'map',view});};
+  const edited=async(date:string,text:string)=>{if(!editing)return;await commit(current=>({...current,photos:current.photos.map(p=>p.id===editing?{...p,date,text}:p)}));setEditing(null);setEditPanel(false);};
+  return <main>
+    {mapMounted&&<div className={`map-shell ${screen==='map'?'':'offscreen'}`}><WorldMap points={library.points} draftCoords={pointDraft&&!pointDraft.existing?pointDraft.coords:undefined} available={available} visible={screen==='map'} request={request} onView={view=>{viewRef.current=view;}} onLabels={labels=>{geoLabels.current=labels;}} onLocate={()=>setSelected(null)} remember={remember} create={(coords,view,labels)=>{setSelected(null);setPointDraft({coords,view,labels});}} select={openPanorama} upload={startBackgrounds} arrive={pointId=>{if(available.has(pointId))openPanorama(pointId);else setSelected(pointId);}}/>
+      {screen==='map'&&<><div className="top-controls"><button aria-label="Atrás" onClick={back}>‹</button><span>Mapa de Recuerdos</span><button aria-label="Inicio" onClick={home}>⌂</button></div><button className="save-zone" onClick={()=>{setZoneName('');setZoneDialog(true);}} disabled={!ready}>Guardar esta zona</button><p className="map-hint">Un toque: acercar · Dos toques: nuevo punto y panorámica</p>{selectedPoint&&<section className="point-notice"><strong>{dateText(selectedPoint.date)} · {selectedPoint.name||'Punto de recuerdo'}</strong><p>{available.has(selectedPoint.id)?'Abriendo panorámica…':'Mantén pulsado para cargar la panorámica'}</p>{!available.has(selectedPoint.id)&&<button onClick={()=>startBackgrounds(selectedPoint.id)}>Cargar panorámica</button>}<button onClick={()=>setPointDraft({coords:selectedPoint.coords,view:selectedPoint.view,labels:{},existing:selectedPoint})}>Editar</button><button onClick={()=>setSelected(null)}>Cerrar</button></section>}</>}
+    </div>}
+    {screen==='home'&&<section className="home"><h1>Mapa de<br/>Recuerdos</h1><nav aria-label="Inicio"><button disabled={!ready} onClick={openMap}><span>◎</span>MAPA<b>›</b></button><button disabled={!ready} onClick={()=>{setQuery('');setFilterDate('');go('place');}}><span>⌖</span>LUGAR<b>›</b></button><button disabled={!ready} onClick={()=>{setQuery('');setFilterDate('');go('date');}}><span>▦</span>FECHA<b>›</b></button></nav>{!ready&&!fatal&&<p role="status">Abriendo tus recuerdos…</p>}</section>}
+    {(screen==='place'||screen==='date')&&<section className="listing"><header><button aria-label="Atrás" onClick={back}>‹</button><h1>{screen==='place'?'LUGAR':'FECHA'}</h1><button aria-label="Inicio" onClick={home}>⌂</button></header><div className="filters"><label>Buscar lugar<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Nombre del lugar"/></label><label>Fecha<input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)}/></label><button onClick={()=>{setQuery('');setFilterDate('');}}>Limpiar</button></div>
+      {screen==='place'&&library.zones.filter(z=>normalize(z.name).includes(normalize(query))).length>0&&<><h2>Zonas guardadas</h2>{library.zones.filter(z=>normalize(z.name).includes(normalize(query))).map(zone=><button className="list-row" key={zone.id} onClick={()=>travelZone(zone)}><span><strong>{zone.name}</strong><small>Zona del mapa · Encuadre guardado</small></span><b>›</b></button>)}</>}
+      <h2>{screen==='date'?'Fechas y lugares':'Puntos de recuerdo'}</h2>{rows.map(p=>{const pano=library.panoramas.find(x=>x.pointId===p.id);return <button key={p.id} className="list-row" onClick={()=>travel(p)}>{pano&&<PhotoImage imageId={pano.backgrounds[0]} alt=""/>}<span><strong>{screen==='date'?dateText(p.date):p.name||'Sin nombre'}</strong><span>{screen==='date'?p.name||'Sin nombre':dateText(p.date)}</span><small>{pano?'Entrar en panorámica':'Punto pendiente de panorámica'}</small></span><b>›</b></button>;})}{!rows.length&&<p className="empty">No hay puntos con estos filtros. En MAPA, pulsa dos veces en una zona vacía para crear una fecha.</p>}
+    </section>}
+    {screen==='panorama'&&panorama&&point&&<><PanoramaView key={panorama.id} panorama={panorama} point={point} photos={library.photos.filter(p=>p.panoramaId===panorama.id)} siblings={library.panoramas.filter(p=>p.pointId===point.id)} initialDirection={directions.current[panorama.id]??panorama.direction} onDirection={value=>{directions.current[panorama.id]=value;}} add={startPhoto} full={setFullPhoto} edit={p=>{setEditing(p.id);setEditPanel(true);}} editing={editing} move={(photo,direction,y)=>void run(()=>commit(current=>({...current,photos:current.photos.map(p=>p.id===photo.id?{...p,direction,y}:p)})))} switchPanorama={value=>{setEditing(null);setPanoramaId(value);}}/><div className="top-controls panorama-controls"><button aria-label="Atrás" onClick={back}>‹</button><span/><button aria-label="Inicio" onClick={home}>⌂</button></div>{photoEditing&&<button className="edit-toggle" onClick={()=>setEditPanel(!editPanel)}>Editar</button>}
+      {photoEditing&&editPanel&&<aside className="edit-panel"><header><h2>Editar foto</h2><button aria-label="Cerrar edición para mover la foto" onClick={()=>setEditPanel(false)}>×</button></header><EditPhoto key={photoEditing.id} photo={photoEditing} busy={busy} save={(date,text)=>void run(()=>edited(date,text))} remove={()=>setDeleteConfirm(true)}/><button onClick={()=>{setEditing(null);setEditPanel(false);}}>Terminar edición</button></aside>}
+    </>}
+    {fullPhoto&&<section className="full-photo" role="dialog" aria-modal="true" aria-label="Fotografía completa"><button aria-label="Cerrar foto completa" className="full-close" onClick={()=>setFullPhoto(null)}>×</button><button aria-label="Atrás desde foto completa" className="full-back" onClick={()=>setFullPhoto(null)}>‹</button><div className="full-images"><PhotoImage imageId={fullPhoto.imageId} kind="original" alt="Fotografía completa sin recortar"/>{fullPhoto.secondImageId&&<PhotoImage imageId={fullPhoto.secondImageId} kind="original" alt="Segunda fotografía completa sin recortar"/>}</div><p>{dateText(fullPhoto.date)}{fullPhoto.text&&` · ${fullPhoto.text}`}</p></section>}
+    {pointDraft&&<Modal message={message} title={pointDraft.existing?'Editar punto':'Crear punto fechado'} locked={busy} close={()=>setPointDraft(null)}><PointForm draft={pointDraft} busy={busy} save={(date,name)=>void run(async()=>{const draft=pointDraft;if(draft.existing)await commit(current=>({...current,points:current.points.map(p=>p.id===draft.existing!.id?{...p,date,name}:p)}));else{const pointId=id();await commit(current=>({...current,points:[...current.points,{id:pointId,coords:draft.coords,date,name,view:draft.view,zoneId:activeZone.current,...draft.labels}]}));setSelected(pointId);setPanoramaStep(pointId);}setPointDraft(null);})}/></Modal>}
+    {panoramaStep&&<Modal message={message} title="Punto creado · Cargar panorámica" locked={busy} close={()=>setPanoramaStep(null)}><p>Tu nuevo punto ya está guardado: <strong>{dateText(library.points.find(p=>p.id===panoramaStep)?.date??'')}</strong>. Elige ahora los fondos de su panorámica.</p><label>Elegir fotografías para la panorámica<input type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>acceptBackgrounds([...(e.target.files??[])],panoramaStep)}/></label><p className="help">Puedes seleccionar varias fotos. Después podrás ordenarlas. Si lo dejas para más tarde, el marcador permanecerá guardado.</p><button disabled={busy} onClick={()=>setPanoramaStep(null)}>Cargar más tarde</button></Modal>}
+    {zoneDialog&&<Modal message={message} title="Guardar esta zona" close={()=>setZoneDialog(false)} locked={busy}><form onSubmit={e=>{e.preventDefault();void run(async()=>{const zone:Zone={id:id(),name:zoneName.trim(),view:structuredClone(viewRef.current),...geoLabels.current};await commit(current=>({...current,zones:[...current.zones,zone]}));activeZone.current=zone.id;setZoneDialog(false);setMessage('Zona guardada. La encontrarás en LUGAR.');});}}><label>Nombre de la zona<input required maxLength={160} value={zoneName} onChange={e=>setZoneName(e.target.value)}/></label><p className="help">Conserva el centro y el acercamiento actuales del mapa real.</p><button className="primary" disabled={busy||!zoneName.trim()}>Guardar zona</button></form></Modal>}
+    {backgroundPoint&&<Modal message={message} title="Ordenar la panorámica" locked={busy} close={()=>{setBackgroundPoint(null);setBackgrounds([]);}}><p>Ordena los fondos de izquierda a derecha. El último enlazará con el primero al girar.</p><ol className="background-order">{backgrounds.map((picture,index)=><li key={picture.id}><BlobImage blob={picture.thumbnail} alt={`Fondo ${index+1}`}/><span>{index+1}</span><button aria-label={`Mover fondo ${index+1} a la izquierda`} disabled={busy||index===0} onClick={()=>setBackgrounds(items=>{const next=[...items];[next[index-1],next[index]]=[next[index],next[index-1]];return next;})}>←</button><button aria-label={`Mover fondo ${index+1} a la derecha`} disabled={busy||index===backgrounds.length-1} onClick={()=>setBackgrounds(items=>{const next=[...items];[next[index+1],next[index]]=[next[index],next[index+1]];return next;})}>→</button></li>)}</ol><p className="help">Se añadirá una panorámica nueva a este punto. Las anteriores se conservarán.</p><button className="primary" disabled={busy||!backgrounds.length} onClick={()=>void run(async()=>{const pano:Panorama={id:id(),pointId:backgroundPoint,backgrounds:backgrounds.map(p=>p.id),direction:0,created:Date.now()};await commit(current=>appendPanorama(current,pano),backgrounds);setBackgroundPoint(null);setBackgrounds([]);setSelected(null);setMessage('Panorámica guardada. Pulsa una vez el punto para entrar.');})}>Crear panorámica y volver al mapa</button></Modal>}
+    {photoDraft&&<Modal message={message} title="Colocar fotografía" locked={busy} close={()=>setPhotoDraft(null)}><PhotoForm draft={photoDraft} busy={busy} onError={setMessage} save={(date,text,second)=>void run(async()=>{const draft=photoDraft;const photo:PlacedPhoto={id:id(),panoramaId:draft.panoramaId,imageId:draft.picture.id,secondImageId:second?.id,date,text,direction:draft.direction,y:draft.y,size:PHOTO_SIZE};await commit(current=>appendPhoto(current,photo),[draft.picture,...(second?[second]:[])]);setPhotoDraft(null);})}/></Modal>}
+    {deleteConfirm&&photoEditing&&<Modal message={message} title="Eliminar esta foto" close={()=>setDeleteConfirm(false)} locked={busy}><p>Se quitará esta foto de la panorámica. Los fondos y las demás fotos se conservarán.</p><button className="danger" disabled={busy} onClick={()=>void run(async()=>{const photoId=editing;await commit(current=>({...current,photos:current.photos.filter(p=>p.id!==photoId)}));setDeleteConfirm(false);setEditing(null);setEditPanel(false);})}>Eliminar foto</button><button onClick={()=>setDeleteConfirm(false)}>Cancelar</button></Modal>}
+    <input hidden ref={backgroundInput} type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Seleccionar fondos de panorámica" onChange={e=>{const files=[...(e.target.files??[])];const pointId=uploadPoint.current;if(!pointId||!files.length)return;acceptBackgrounds(files,pointId);}}/>
+    <input hidden ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Seleccionar fotografía del recuerdo" onChange={e=>{const file=e.target.files?.[0];const position=uploadPosition.current;if(!file||!position)return;void run(async()=>{const picture=await prepareImage(file);setPhotoDraft({...position,picture});});}}/>
+    {busy&&<div className="busy" role="status">Preparando y guardando…</div>}{fatal&&<div className="fatal" role="alert">{fatal}</div>}{message&&<div className="toast" role="status">{message}<button aria-label="Cerrar aviso" onClick={()=>setMessage('')}>×</button></div>}
+  </main>;
+}
