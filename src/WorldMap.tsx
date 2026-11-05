@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import maplibregl, { type GeoJSONSource, type Map as MapType, type Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { dateText, DOUBLE_MS, type MemoryPoint, type View } from './model';
+import PlaceSearch, { type SearchPlace } from './PlaceSearch';
+import { spanishNames } from './mapLanguage';
 import { usePress } from './usePress';
 import { createMapTaps } from './mapTaps';
 import { accuracyText, locationZoom, requestLocation } from './location';
@@ -19,6 +21,18 @@ export default function WorldMap(props: Props) {
   const [pins,setPins] = useState<Array<{ point: MemoryPoint; marker: Marker; element: HTMLElement }>>([]);
   const markers = useRef(new Map<string,{ point: MemoryPoint; marker: Marker; element: HTMLElement }>());
   const lastDouble = useRef(0);
+  const [searchOpen,setSearchOpen]=useState(false);
+  const searchMarker=useRef<Marker|null>(null);
+  const choosePlace=(place:SearchPlace)=>{
+    const map=mapRef.current;if(!map)return;
+    cancelTap.current();map.stop();current.current.remember(captureView(map));current.current.onLocate();
+    searchMarker.current?.remove();
+    const element=document.createElement('div');element.className='search-destination';element.dataset.searchLocation='true';element.textContent=place.name;
+    searchMarker.current=new maplibregl.Marker({element,anchor:'bottom'}).setLngLat(place.coords).addTo(map);
+    element.removeAttribute('tabindex');setSearchOpen(false);
+    if(place.bounds)map.fitBounds([[place.bounds[0],place.bounds[1]],[place.bounds[2],place.bounds[3]]],{padding:70,maxZoom:16,duration:1300});
+    else map.flyTo({center:place.coords,zoom:15,duration:1300,essential:true});
+  };
   const locationMarker = useRef<Marker|null>(null);
   const locationRequest = useRef(0);
   const [locating,setLocating] = useState(false);
@@ -50,12 +64,12 @@ export default function WorldMap(props: Props) {
     } finally { if(token===locationRequest.current)setLocating(false); }
   };
   useEffect(()=>{
-    if(!props.visible){locationRequest.current++;setLocating(false);setLocationStatus('');locationMarker.current?.remove();locationMarker.current=null;}
+    if(!props.visible){setSearchOpen(false);searchMarker.current?.remove();searchMarker.current=null;locationRequest.current++;setLocating(false);setLocationStatus('');locationMarker.current?.remove();locationMarker.current=null;}
   },[props.visible]);
   useEffect(() => {
     if (!node.current) return;
     let map: MapType;
-    try { map = new maplibregl.Map({ container: node.current, style:'https://tiles.openfreemap.org/styles/liberty', ...props.request.view, minZoom:1, maxZoom:19, doubleClickZoom:false, attributionControl:false }); }
+    try { map = new maplibregl.Map({ container: node.current, style:'https://tiles.openfreemap.org/styles/liberty', ...props.request.view, minZoom:1, maxZoom:19, doubleClickZoom:false, attributionControl:false,locale:{'AttributionControl.ToggleAttribution':'Mostrar información del mapa','AttributionControl.MapFeedback':'Informar de un error en el mapa','Map.Title':'Mapa mundial','Map.Description':'Explora el mapa con el ratón o mediante gestos táctiles.'} }); }
     catch { setError('No se pudo iniciar el mapa. Este navegador necesita WebGL habilitado.'); return; }
     mapRef.current = map;
     map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-left');
@@ -75,6 +89,9 @@ export default function WorldMap(props: Props) {
       setPins([...markers.current.values()]);
     };
     map.on('load',()=>{
+      for(const layer of map.getStyle().layers){
+        if(layer.type==='symbol' && layer.layout?.['text-field'])map.setLayoutProperty(layer.id,'text-field',spanishNames(layer.layout['text-field']));
+      }
       try{map.setProjection({type:'globe'});}catch{/* Continue with the same navigable flat map. */}
       map.addSource('memories',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterRadius:44,clusterMaxZoom:16});
       map.addLayer({id:'memory-clusters',type:'circle',source:'memories',filter:['has','point_count'],paint:{'circle-color':'#225f65','circle-radius':22,'circle-stroke-width':3,'circle-stroke-color':'#fff'}});
@@ -88,7 +105,7 @@ export default function WorldMap(props: Props) {
     const labelsAt = (x:number,y:number) => {
       const result:Record<string,string>={};
       for(const feature of map.queryRenderedFeatures([x,y])) {
-        const layer=(feature.layer?.id ?? '').toLowerCase(); const name=feature.properties?.['name:es'] || feature.properties?.name;
+        const layer=(feature.layer?.id ?? '').toLowerCase(); const name=feature.properties?.['name:es'] || feature.properties?.name_es || feature.properties?.name;
         if(typeof name!=='string')continue;
         if(layer.includes('country'))result.country=name;
         if(layer.includes('state')||layer.includes('province'))result.province=name;
@@ -147,12 +164,12 @@ export default function WorldMap(props: Props) {
     container.addEventListener('pointerup',up);
     container.addEventListener('pointercancel',cancel);
     map.on('click',event=>{
-      if(performance.now()-lastTouch<800||(event.originalEvent.target as HTMLElement)?.closest('[data-point],[data-user-location]'))return;
+      if(performance.now()-lastTouch<800||(event.originalEvent.target as HTMLElement)?.closest('[data-point],[data-user-location],[data-search-location]'))return;
       tapAt(event.point.x,event.point.y);
     });
-    map.on('dblclick',event=>{event.preventDefault();if(performance.now()-lastTouch<800||(event.originalEvent.target as HTMLElement)?.closest('[data-point],[data-user-location]'))return;if(map.getLayer('memory-clusters')&&map.queryRenderedFeatures(event.point,{layers:['memory-clusters']}).length)return;if(performance.now()-lastDouble.current>DOUBLE_MS)createAt({x:event.point.x,y:event.point.y,coords:[event.lngLat.wrap().lng,event.lngLat.lat]});});
+    map.on('dblclick',event=>{event.preventDefault();if(performance.now()-lastTouch<800||(event.originalEvent.target as HTMLElement)?.closest('[data-point],[data-user-location],[data-search-location]'))return;if(map.getLayer('memory-clusters')&&map.queryRenderedFeatures(event.point,{layers:['memory-clusters']}).length)return;if(performance.now()-lastDouble.current>DOUBLE_MS)createAt({x:event.point.x,y:event.point.y,coords:[event.lngLat.wrap().lng,event.lngLat.lat]});});
     map.on('error',()=>setError('Algunas teselas no se han cargado. Comprueba la conexión; tus puntos se conservan.'));
-    return ()=>{locationRequest.current++;locationMarker.current?.remove();locationMarker.current=null;taps.cancel();container.removeEventListener('pointerdown',down);container.removeEventListener('pointermove',move);container.removeEventListener('pointerup',up);container.removeEventListener('pointercancel',cancel);for(const pin of markers.current.values())pin.marker.remove();markers.current.clear();map.remove();mapRef.current=null;};
+    return ()=>{searchMarker.current?.remove();searchMarker.current=null;locationRequest.current++;locationMarker.current?.remove();locationMarker.current=null;taps.cancel();container.removeEventListener('pointerdown',down);container.removeEventListener('pointermove',move);container.removeEventListener('pointerup',up);container.removeEventListener('pointercancel',cancel);for(const pin of markers.current.values())pin.marker.remove();markers.current.clear();map.remove();mapRef.current=null;};
   },[]);
   useEffect(()=>{
     const map=mapRef.current;
@@ -179,6 +196,7 @@ export default function WorldMap(props: Props) {
     {pins.map(pin=>createPortal(<PointPin point={pin.point} available={props.available.has(pin.point.id)} select={()=>props.select(pin.point.id)} upload={()=>props.upload(pin.point.id)}/>,pin.element,pin.point.id))}
     {error&&<div className="map-error" role="status">{error}<button aria-label="Cerrar aviso" onClick={()=>setError('')}>×</button></div>}
     {props.visible&&<><button className="locate-button" onClick={()=>void locate()} disabled={locating||!loaded} aria-busy={locating}><span aria-hidden="true">⌾</span> {locating?'Buscando…':'Mi ubicación'}</button>{locationStatus&&<div className="location-status" role="status">{locationStatus}<button aria-label="Cerrar aviso de ubicación" onClick={()=>setLocationStatus('')}>×</button></div>}</>}
+    {props.visible&&<><button className="search-map-button" disabled={!loaded} onClick={()=>{cancelTap.current();setSearchOpen(v=>!v);}}>⌕ Buscar ciudad o lugar</button>{searchOpen&&<PlaceSearch close={()=>setSearchOpen(false)} choose={choosePlace}/>}</>}
     {props.visible&&<div className="zoom-controls"><button aria-label="Acercar" onClick={()=>{const map=mapRef.current;if(map){props.remember(captureView(map));map.zoomIn({duration:450});}}}>+</button><button aria-label="Alejar" onClick={()=>{const map=mapRef.current;if(map){props.remember(captureView(map));map.zoomOut({duration:450});}}}>−</button></div>}
   </div>;
 }

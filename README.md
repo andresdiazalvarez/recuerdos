@@ -86,3 +86,21 @@ Se interpreta el país al final de la consulta separado por coma (por ejemplo, �
 ### Versión 0.3.5 · Dos opciones de búsqueda
 
 España muestra los campos en orden: Calle (opcional), Ciudad y País (España, fijo). Busca calles dentro de España o ciudades si se deja vacía la calle. Fuera de España muestra solo Ciudad y País, por ejemplo Varsovia, Polonia; aplica el país como filtro y busca ciudades. Los campos no utilizados no se envían. Se mantiene la selección de resultados para acercar el mapa.
+
+### Versión 0.3.6 · Invertir panorámica
+
+Dentro de una panorámica de dos o más fondos aparece el botón «Invertir orden», debajo de su fecha. Invierte la secuencia completa (último fondo primero), guarda el resultado y muestra el nuevo comienzo. No refleja ni gira las imágenes individuales. Las fotos colocadas se desplazan junto con su fondo y conservan fecha, texto y altura. Pulsarlo otra vez restaura la secuencia anterior. Solo afecta a la panorámica abierta. Está deshabilitado mientras se guarda o se edita una foto.
+
+### Versión 0.3.7 · Fotos un 50 % más grandes
+
+Las fotos colocadas dentro de las panorámicas se muestran con un ancho un 50 % mayor que en la versión anterior y un límite de altura proporcional (225 px frente a 150 px). Se aplica a fotos nuevas y ya guardadas, incluidas composiciones dobles, conservando el centro de colocación, fecha y texto. No modifica los archivos originales ni sus datos guardados.
+
+### Versión 0.3.8 · Tren de fotos
+
+En cada panorámica, «Ver tren de fotos» muestra las fotos de ese recuerdo en una fila flotante con perspectiva, fecha y texto. Arrastrar desde una foto o desde el espacio entre ellas mueve la fila en el sentido del dedo; un toque sin arrastre abre la foto original. También permite desplazamiento horizontal y teclado. «Volver a la panorámica» conserva las posiciones guardadas y la dirección de la panorámica. La vista no cambia los datos y no incluye fotos de otras panorámicas. Para añadir o editar fotos se vuelve a la panorámica. Se mantiene la ampliación del 50 % en la vista original.
+
+### Versión 0.4.0 · Varios trenes opcionales por panorámica
+
+Gira hasta la zona deseada y pulsa «Crear tren aquí». Ponle nombre y selecciona fotos existentes, o guárdalo vacío. Se guarda un marcador en esa dirección. Puedes crear otros trenes girando hacia otra zona y repitiendo el proceso. Abre cada uno desde su marcador o desde «Ver un tren». Solo aparecen las fotos elegidas para ese tren; arrastrarlas desplaza la fila. «Añadir foto a este tren» carga una imagen nueva con fecha y texto y la incorpora al grupo. «Elegir fotos / Editar tren» permite cambiar nombre y selección, o quitar el tren conservando sus fotos.
+
+Las fotos siguen visibles y editables en sus puntos originales de la panorámica. Crear trenes es opcional y no agrupa automáticamente todas las fotos existentes. Los trenes se guardan en el dispositivo junto a sus panorámicas y sobreviven al cierre y recarga. Los datos anteriores, sin trenes, siguen siendo compatibles. Invertir los fondos desplaza también los marcadores de tren con su fondo.

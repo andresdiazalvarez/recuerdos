@@ -64,3 +64,19 @@ La ubicación GPS real y la concesión del permiso deben comprobarse en el móvi
 ### Verificación 0.3.5
 
 22 pruebas correctas y TypeScript sin errores. Consultas reales: Varsovia, Polonia devuelve Warszawa en Polonia; Calle de Alcalá, Madrid con país ES y capa street devuelve la calle en Madrid. Pruebas de campos, país fijo, calle opcional, omisión de calle fuera de España y validación de país/ciudad. La comprobación visual del formulario queda pendiente por el fallo de inicialización del navegador de pruebas documentado anteriormente.
+
+### Verificación 0.3.6
+
+25 pruebas correctas y TypeScript sin errores. Nuevas pruebas: inversión sin modificar el original, fotos asociadas a sus fondos, conservación de otras panorámicas, dos inversiones restauran el orden y las posiciones, persistencia al recargar y fondo único. La verificación visual sigue pendiente por el fallo del navegador de pruebas documentado anteriormente.
+
+### Verificación 0.3.7
+
+TypeScript y compilación de producción correctos. Cambio de presentación: factor 1.5 sobre el tamaño guardado de cada foto y máximo de altura de 150 a 225 px. Se conserva el anclaje central y se amplía el margen de representación circular. Sin cambios de almacenamiento. Verificación visual pendiente debido al fallo previo del navegador de pruebas.
+
+### Verificación 0.3.8
+
+TypeScript, compilación de producción y 25 pruebas existentes correctos. Nueva vista adicional de tren: arrastre con captura de puntero y umbral de 9 px para distinguir arrastre de toque; cancelación de gestos, apertura por teclado, fotos dobles y estado vacío. No modifica almacenamiento ni posiciones. Pendiente verificación visual y del gesto en un móvil real: las pruebas automáticas existentes no cubren la interacción del tren y el navegador de pruebas sigue sin estar disponible por el fallo documentado.
+
+### Verificación 0.4.0
+
+TypeScript, compilación de producción y 29 pruebas correctos. Cuatro pruebas nuevas comprueban varios trenes independientes por panorámica, fotos sueltas, datos antiguos sin trenes, rechazo de fotos de otra panorámica, añadir fotos a un grupo concreto, editar selección, quitar grupo sin borrar fotos, persistencia tras recarga y posición al invertir los fondos (tolerancia numérica para decimales). Se conserva el tamaño ampliado de las fotos. La comprobación visual y los gestos en móvil siguen pendientes por el fallo del navegador de pruebas previamente documentado; no están cubiertos por estas pruebas de datos.
