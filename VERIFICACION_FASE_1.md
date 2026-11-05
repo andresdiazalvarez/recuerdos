@@ -49,3 +49,18 @@ Se añade el botón «Mi ubicación» en el mapa. Solicita una posición nueva a
 Quince pruebas automatizadas pasan, incluidas cinco específicas de geolocalización: consulta única y opciones de precisión/tiempo/caché, orden de coordenadas, bloqueo en HTTP inseguro y falta de soporte, permiso denegado/falta de señal/tiempo agotado, datos inválidos y zoom según precisión. Las coordenadas de estas pruebas son ficticias de demostración; no se consulta la posición real del usuario para ejecutarlas.
 
 La ubicación GPS real y la concesión del permiso deben comprobarse en el móvil del usuario. No se ha aceptado ningún permiso de ubicación en su nombre.
+
+### Verificación 0.3.3
+
+- 18 pruebas automáticas correctas: incluye idioma de etiquetas sin alterar referencias de carreteras, resultados geográficos, país en español, encuadre, coordenadas inválidas y pruebas anteriores de persistencia y gestos.
+- Consulta HTTPS real a Photon con «Los Caños de Meca»: devuelve el núcleo y su playa con coordenadas.
+- Compilación TypeScript/Vite correcta. Paquete docs y recuerdos.zip regenerados.
+- No se pudo completar la comprobación visual de esta versión: el navegador de pruebas falló al inicializar (timeout del servicio). Pendiente confirmar visualmente desde el móvil los nombres y la selección de un resultado. No se solicitó GPS ni se alteraron recuerdos reales.
+
+### Verificación 0.3.4
+
+20 pruebas correctas y TypeScript sin errores. Consulta real a Photon a través de las mismas funciones de la aplicación con «praga, chequia»: primer resultado «Praga (Praha), Chequia», longitud 14.4212535 y latitud 50.0874654; encuadre de la capital. Se comprueban República Checa, países en español, orden de ciudades y exclusión de otros países. El navegador de pruebas sigue fallando por timeout de inicialización, por lo que no se afirma una verificación visual.
+
+### Verificación 0.3.5
+
+22 pruebas correctas y TypeScript sin errores. Consultas reales: Varsovia, Polonia devuelve Warszawa en Polonia; Calle de Alcalá, Madrid con país ES y capa street devuelve la calle en Madrid. Pruebas de campos, país fijo, calle opcional, omisión de calle fuera de España y validación de país/ciudad. La comprobación visual del formulario queda pendiente por el fallo de inicialización del navegador de pruebas documentado anteriormente.

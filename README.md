@@ -70,3 +70,19 @@ La consulta se realiza solo al pulsar: no hay seguimiento continuo ni se guarda 
 Para usarlo desde el móvil, abre la dirección HTTPS de GitHub Pages; una dirección de red local con HTTP puede impedir la geolocalización. Si deniegas el permiso, no hay señal o se agota el tiempo, aparece una explicación y puedes intentarlo de nuevo. No se crea ni modifica ninguna panorámica al localizarte.
 
 Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition
+
+### Versión 0.3.3 · Mapa en español y búsqueda geográfica
+
+El mapa da prioridad a `name:es` y `name_es`; si los datos no contienen una traducción, muestra el nombre local. Los números de carretera se mantienen. Los controles del mapa también están en español.
+
+En MAPA, pulsa **Buscar ciudad o lugar**, escribe por ejemplo «Los Caños de Meca», pulsa **Buscar** y elige una coincidencia. El mapa se acerca a ese lugar y muestra una señal temporal; desde allí puedes dar dos toques para crear tu recuerdo. El botón Atrás conserva la vista anterior. La opción LUGAR inicial sigue buscando tus recuerdos guardados.
+
+El buscador necesita conexión y envía únicamente el texto escrito al servicio público Photon de Komoot (datos OpenStreetMap). Consulta solo al pulsar Buscar, guarda resultados en memoria durante la sesión y permite cancelar/cerrar. Su disponibilidad depende del proveedor. Documentación: https://github.com/komoot/photon
+
+### Versión 0.3.4 · Países en español en el buscador
+
+Se interpreta el país al final de la consulta separado por coma (por ejemplo, «Praga, Chequia» o «París, Francia»), se convierte a código ISO y se aplica un filtro real. Se aceptan Chequia y República Checa. Las ciudades aparecen antes que alojamientos y otras coincidencias; la capital checa se muestra como «Praga (Praha), Chequia». Una consulta sin país reconocido mantiene el texto original.
+
+### Versión 0.3.5 · Dos opciones de búsqueda
+
+España muestra los campos en orden: Calle (opcional), Ciudad y País (España, fijo). Busca calles dentro de España o ciudades si se deja vacía la calle. Fuera de España muestra solo Ciudad y País, por ejemplo Varsovia, Polonia; aplica el país como filtro y busca ciudades. Los campos no utilizados no se envían. Se mantiene la selección de resultados para acercar el mapa.
