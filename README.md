@@ -103,3 +103,7 @@ Se restaura el funcionamiento de la versión 0.3.7: panorámica con fotos en sus
 ### Versión 0.4.2 · Mover y ampliar fotos
 
 Arrastrar directamente una foto cambia su posición y la guarda al soltar. Un toque breve abre la imagen completa; dos toques aumentan su tamaño en la panorámica, en pasos de un 50 % hasta un ancho máximo del 75 % de la pantalla (una imagen simple). El siguiente doble toque recupera el tamaño inicial, que mantiene la ampliación general del 50 %. Las composiciones dobles conservan su proporción. Mantener pulsado sin arrastrar abre la edición de texto y fecha. No reaparecen trenes.
+
+### Versión 0.4.3 · Lectura de fotografías
+
+Se lee el archivo completo antes de decodificarlo, se crea una copia Blob independiente y se comprueba la firma real JPG/PNG/WebP aunque el selector no comunique el tipo correctamente. Los avisos incluyen el nombre del archivo y diferencian archivo no disponible, vacío, formato no admitido y fallo de decodificación. No se incorpora conversión HEIC. La causa exacta del error comunicado en móvil sigue pendiente de recibir la fotografía original.

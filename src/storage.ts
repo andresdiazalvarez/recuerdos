@@ -1,3 +1,4 @@
+import { readablePhoto } from './imageInput.ts';
 import { EMPTY, PHOTO_SIZE, id, type Library, type Picture } from './model.ts';
 
 let connection: Promise<IDBDatabase> | undefined;
@@ -62,11 +63,10 @@ export async function loadLibrary(): Promise<Library> {
 async function dataFile(data: string) { const blob = await (await fetch(data)).blob(); return new File([blob], 'recuerdo.jpg', { type: blob.type }); }
 
 export async function prepareImage(file: File): Promise<Picture> {
-  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Selecciona fotos JPG, PNG o WebP. Convierte HEIC a JPG antes de añadirlo.');
-  if (file.size > 25 * 1024 * 1024) throw new Error('Cada fotografía debe ocupar menos de 25 MB.');
-  const url = URL.createObjectURL(file);
+  const original=await readablePhoto(file);
+  const url = URL.createObjectURL(original);
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = () => reject(new Error('No se puede leer esta fotografía.')); image.src = url; });
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = () => reject(new Error(`${file.name}: el navegador no consigue decodificar esta foto. Prueba con una captura de pantalla; si funciona, exporta la original como JPG o reduce su resolución.`)); image.src = url; });
     const resize = async (max: number) => {
       const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
       const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(img.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
@@ -74,6 +74,6 @@ export async function prepareImage(file: File): Promise<Picture> {
       context.drawImage(img, 0, 0, canvas.width, canvas.height);
       return new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('No se pudo preparar la foto.')), 'image/jpeg', .86));
     };
-    return { id: id(), original: file, medium: await resize(1920), thumbnail: await resize(320), width: img.naturalWidth, height: img.naturalHeight };
+    return { id: id(), original, medium: await resize(1920), thumbnail: await resize(320), width: img.naturalWidth, height: img.naturalHeight };
   } finally { URL.revokeObjectURL(url); }
 }

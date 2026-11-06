@@ -81,3 +81,7 @@ TypeScript, compilación de producción y 25 pruebas correctos. No quedan refere
 ### Verificación 0.4.2
 
 TypeScript, compilación y 25 pruebas existentes correctos. Los nuevos gestos usan captura de puntero, umbral de 9 px para arrastre, posición actual en referencia para evitar guardar coordenadas atrasadas, separación entre toque sencillo/doble y pulsación larga y cancelación de temporizadores. Posición y tamaño se guardan en la colección de fotos existente. Pendiente comprobar los nuevos gestos en móvil: las pruebas existentes no verifican esta interacción visual.
+
+### Verificación 0.4.3
+
+TypeScript y 27 pruebas correctos. Nuevas comprobaciones de lectura con tipo MIME ausente/incorrecto, contenido vacío, origen que no entrega bytes y HEIC etiquetado como JPG. No se ha reproducido el fallo concreto de decodificación: solo se dispone de una captura del error, no de la foto original. No se afirma que esta actualización resuelva todas sus causas posibles.
