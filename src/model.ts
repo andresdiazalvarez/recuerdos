@@ -2,7 +2,7 @@ export type View = { center: [number, number]; zoom: number; bearing: number; pi
 export type Zone = { id: string; name: string; view: View; country?: string; province?: string; municipality?: string };
 export type MemoryPoint = { id: string; zoneId?: string; coords: [number, number]; date: string; name: string; view: View; country?: string; province?: string; municipality?: string };
 export type Panorama = { id: string; pointId: string; backgrounds: string[]; direction: number; created: number };
-export type PlacedPhoto = { id: string; panoramaId: string; imageId: string; secondImageId?: string; date: string; text: string; direction: number; y: number; size: number };
+export type PlacedPhoto = { id: string; panoramaId: string; imageId: string; secondImageId?: string; date: string; text: string; direction: number; y: number; size: number; isDish?: boolean; dishName?: string; previousSizes?: number[] };
 export type Picture = { id: string; original: Blob; medium: Blob; thumbnail: Blob; width: number; height: number };
 export type Library = { zones: Zone[]; points: MemoryPoint[]; panoramas: Panorama[]; photos: PlacedPhoto[] };
 export const WORLD: View = { center: [-5, 37], zoom: 1.6, bearing: 0, pitch: 0 };
@@ -47,4 +47,18 @@ export function reversePanorama(library: Library, panoramaId: string): Library {
 }
 
 
-export const nextPhotoSize=(size:number)=>size>=.5?PHOTO_SIZE:Math.min(.5,size*1.5);
+export function changePhotoSize(photo:PlacedPhoto,grow:boolean):PlacedPhoto{
+ const history=photo.previousSizes||[];
+ if(grow){const size=Math.min(.5,photo.size*1.5);return size===photo.size?photo:{...photo,size,previousSizes:[...history,photo.size]};}
+ if(!history.length)return photo.size>PHOTO_SIZE?{...photo,size:Math.max(PHOTO_SIZE,photo.size/1.5)}:photo;
+ return {...photo,size:history[history.length-1],previousSizes:history.slice(0,-1)};
+}
+
+export function dishRows(library:Library,query='',date='',place=''){
+ return library.photos.flatMap(photo=>{
+  if(!photo.isDish||!normalize(photo.dishName||'').includes(normalize(query))||(date&&photo.date!==date))return [];
+  const panorama=library.panoramas.find(p=>p.id===photo.panoramaId),point=library.points.find(p=>p.id===panorama?.pointId);
+  if(!panorama||!point||!normalize(point.name).includes(normalize(place)))return [];
+  return [{photo,panorama,point}];
+ }).sort((a,b)=>(a.photo.dishName||'').localeCompare(b.photo.dishName||'','es')||b.photo.date.localeCompare(a.photo.date));
+}

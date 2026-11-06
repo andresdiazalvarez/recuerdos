@@ -111,3 +111,13 @@ Se lee el archivo completo antes de decodificarlo, se crea una copia Blob indepe
 ### Versión 0.4.4 · Panorámica despejada
 
 Se retira el cuadro superior izquierdo con los datos del punto y la ayuda inferior. Se retiran los controles superiores de navegación de esta pantalla. Abajo a la derecha quedan dos botones de 44 × 44 px: volver (blanco, situado a la derecha) e invertir el orden (rojo, símbolo de rotación, a su izquierda). Invertir se desactiva si hay un único fondo o una foto en edición. Se mantienen las fotos, su tamaño y sus gestos.
+
+### Versión 0.4.5 · Doble/triple toque y navegación uniforme
+
+Dos toques amplían la foto sin volver al tamaño inicial al alcanzar el máximo. Tres toques recuperan el tamaño anterior guardado; posteriores dobles toques vuelven a ampliarla. Se espera a completar la secuencia para que el triple no provoque antes una ampliación. Las fotos antiguas sin historial se reducen un paso proporcional. El botón blanco de volver queda abajo a la derecha en mapa, listas, panorámica, foto completa, buscador y cuadros de diálogo. La pantalla inicial no tiene pantalla anterior.
+
+### Versión 0.4.6 · Buscar por plato
+
+La pantalla inicial añade PLATO. Al cargar una foto se pregunta «¿Es un plato?» además de la pregunta sobre texto. Si se elige Sí, se requiere un nombre de plato independiente del texto opcional. PLATO ofrece búsqueda por nombre (sin distinguir tildes o mayúsculas), fecha y lugar, con miniatura y fecha/lugar por resultado. Al elegir uno abre la foto original y su panorámica centrada en la posición guardada. Volver cierra primero la foto y después regresa al listado. Se conserva la navegación inferior.
+
+Editar una foto permite marcar o desmarcar que es un plato y cambiar el nombre, también en fotos anteriores. Las fotos antiguas no se clasifican automáticamente. El mismo plato puede aparecer en varias fechas y lugares como recuerdos distintos. Se conserva el resto de fotos y todas las funciones anteriores.

@@ -89,3 +89,11 @@ TypeScript y 27 pruebas correctos. Nuevas comprobaciones de lectura con tipo MIM
 ### Verificación 0.4.4
 
 TypeScript y compilación correctos. Cambio de presentación y ubicación de controles: sin datos del punto ni ayuda en la panorámica, botones de igual tamaño con etiquetas accesibles y espacio seguro inferior/derecho. Pendiente comprobación visual en móvil.
+
+### Verificación 0.4.5
+
+TypeScript y compilación correctos. Suite existente y nuevas pruebas de secuencia doble/triple, cancelación de gesto y restauración exacta de tamaños: 30 pruebas correctas. Prueba adicional dirigida para reducción de fotos antiguas también correcta (31 pruebas en total). Las comprobaciones no sustituyen la prueba visual en móvil, pendiente.
+
+### Verificación 0.4.6
+
+TypeScript y 33 pruebas correctos. Nuevas comprobaciones: platos con tildes, fechas y lugares, varias fotos con el mismo plato, panorámica/foto exacta, fotos antiguas sin clasificación, edición de categoría y persistencia tras recarga. Compilación de producción correcta. Pendiente comprobación visual de formulario, listado y navegación en móvil.

@@ -46,5 +46,6 @@ export default function PlaceSearch({choose,close}:{choose:(place:SearchPlace)=>
     <div role="status">{message}</div>
     <ul>{results.map((place,i)=><li key={i}><button onClick={()=>choose(place)}>{place.name}<span>Ir a este lugar →</span></button></li>)}</ul>
     <small>Las búsquedas se envían a Photon. Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>.</small>
+    <button type="button" className="screen-back" aria-label="Volver al mapa" onClick={close}>‹</button>
   </section>;
 }
