@@ -85,3 +85,7 @@ TypeScript, compilación y 25 pruebas existentes correctos. Los nuevos gestos us
 ### Verificación 0.4.3
 
 TypeScript y 27 pruebas correctos. Nuevas comprobaciones de lectura con tipo MIME ausente/incorrecto, contenido vacío, origen que no entrega bytes y HEIC etiquetado como JPG. No se ha reproducido el fallo concreto de decodificación: solo se dispone de una captura del error, no de la foto original. No se afirma que esta actualización resuelva todas sus causas posibles.
+
+### Verificación 0.4.4
+
+TypeScript y compilación correctos. Cambio de presentación y ubicación de controles: sin datos del punto ni ayuda en la panorámica, botones de igual tamaño con etiquetas accesibles y espacio seguro inferior/derecho. Pendiente comprobación visual en móvil.

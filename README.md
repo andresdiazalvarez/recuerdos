@@ -107,3 +107,7 @@ Arrastrar directamente una foto cambia su posición y la guarda al soltar. Un to
 ### Versión 0.4.3 · Lectura de fotografías
 
 Se lee el archivo completo antes de decodificarlo, se crea una copia Blob independiente y se comprueba la firma real JPG/PNG/WebP aunque el selector no comunique el tipo correctamente. Los avisos incluyen el nombre del archivo y diferencian archivo no disponible, vacío, formato no admitido y fallo de decodificación. No se incorpora conversión HEIC. La causa exacta del error comunicado en móvil sigue pendiente de recibir la fotografía original.
+
+### Versión 0.4.4 · Panorámica despejada
+
+Se retira el cuadro superior izquierdo con los datos del punto y la ayuda inferior. Se retiran los controles superiores de navegación de esta pantalla. Abajo a la derecha quedan dos botones de 44 × 44 px: volver (blanco, situado a la derecha) e invertir el orden (rojo, símbolo de rotación, a su izquierda). Invertir se desactiva si hay un único fondo o una foto en edición. Se mantienen las fotos, su tamaño y sus gestos.

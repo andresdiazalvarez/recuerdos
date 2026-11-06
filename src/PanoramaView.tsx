@@ -27,7 +27,6 @@ export default function PanoramaView(props: Props) {
   const n=props.panorama.backgrounds.length;
   const [direction,setDirection]=useState(props.initialDirection);
   const directionRef=useRef(direction);
-  const [moving,setMoving]=useState(false);
   const gesture=useRef<{x:number;y:number;direction:number;moved:boolean}|null>(null);
   const pointers=useRef(new Set<number>());
   const change=(value:number)=>{const next=wrap(value,n);directionRef.current=next;setDirection(next);props.onDirection(next);};
@@ -36,13 +35,12 @@ export default function PanoramaView(props: Props) {
   return <div className="panorama-screen"><div className="panorama-stage" aria-label="Panorámica: arrastra horizontalmente para girar" tabIndex={0}
     onKeyDown={e=>{if(e.key==='ArrowLeft'){e.preventDefault();change(directionRef.current-.1);}if(e.key==='ArrowRight'){e.preventDefault();change(directionRef.current+.1);}if(e.key==='Enter'){e.preventDefault();props.add(wrap(directionRef.current+.5,n),.5);}}}
     onPointerDown={e=>{if(e.button!==0)return;pointers.current.add(e.pointerId);if(pointers.current.size>1){gesture.current=null;return;}e.currentTarget.setPointerCapture(e.pointerId);gesture.current={x:e.clientX,y:e.clientY,direction:directionRef.current,moved:false};}}
-    onPointerMove={e=>{const g=gesture.current;if(!g)return;const dx=e.clientX-g.x;if(Math.hypot(dx,e.clientY-g.y)>9){g.moved=true;setMoving(true);}if(g.moved)change(g.direction-dx/e.currentTarget.clientWidth);}}
-    onPointerUp={e=>{pointers.current.delete(e.pointerId);const g=gesture.current;gesture.current=null;setMoving(false);if(!g||g.moved||pointers.current.size)return;const r=e.currentTarget.getBoundingClientRect();props.add(wrap(directionRef.current+(e.clientX-r.left)/r.width,n),Math.max(.08,Math.min(.85,(e.clientY-r.top)/r.height)));}}
-    onPointerCancel={e=>{pointers.current.delete(e.pointerId);gesture.current=null;setMoving(false);}}
+    onPointerMove={e=>{const g=gesture.current;if(!g)return;const dx=e.clientX-g.x;if(Math.hypot(dx,e.clientY-g.y)>9){g.moved=true;}if(g.moved)change(g.direction-dx/e.currentTarget.clientWidth);}}
+    onPointerUp={e=>{pointers.current.delete(e.pointerId);const g=gesture.current;gesture.current=null;if(!g||g.moved||pointers.current.size)return;const r=e.currentTarget.getBoundingClientRect();props.add(wrap(directionRef.current+(e.clientX-r.left)/r.width,n),Math.max(.08,Math.min(.85,(e.clientY-r.top)/r.height)));}}
+    onPointerCancel={e=>{pointers.current.delete(e.pointerId);gesture.current=null;}}
     onContextMenu={e=>e.preventDefault()}>
     {[-1,0,1,2].map(offset=>{const index=base+offset;return <div key={index} className="background-panel" style={{transform:`translateX(${(index-direction)*100}%)`}}><PhotoImage imageId={props.panorama.backgrounds[wrap(index,n)]} kind="medium" alt={`Fondo ${wrap(index,n)+1} de la panorámica`}/></div>;})}
     {props.photos.map(photo=><Spot key={photo.id} photo={photo} direction={direction} count={n} editMode={props.editing===photo.id} full={()=>props.full(photo)} edit={()=>props.edit(photo)} move={props.move} resize={()=>props.resize(photo)}/>)}
-  </div><div className="panorama-title"><strong>{props.point.name||'Punto de recuerdo'}</strong><span>{dateText(props.point.date)}</span>{props.panorama.backgrounds.length>1&&<button className="reverse-panorama" disabled={props.busy||!!props.editing} onClick={props.reverse} title="Cambia el orden de los fondos: el último pasa a ser el primero">⇄ Invertir orden</button>}{props.siblings.length>1&&<label>Panorámica<select value={props.panorama.id} onChange={e=>props.switchPanorama(e.target.value)}>{props.siblings.map((p,index)=><option key={p.id} value={p.id}>{index+1} de {props.siblings.length}</option>)}</select></label>}</div>
-    {!moving&&!props.editing&&<p className="panorama-hint">Arrastra para girar · Toca un espacio vacío para añadir una foto · Arrastra una foto para moverla · Dos toques para cambiar su tamaño</p>}
+  </div>
   </div>;
 }

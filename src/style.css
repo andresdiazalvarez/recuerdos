@@ -133,3 +133,4 @@ input[hidden]{display:none!important}
 /* Enlarge both saved and new photo cards by 50%, preserving their anchor. */
 .placed-photo .photo-images>img,.placed-photo .photo-images>.image-loading{max-height:225px}
 .placed-photo .photo-images>img,.placed-photo .photo-images>.image-loading{max-height:var(--photo-height,225px)}
+.panorama-bottom-controls{position:absolute;right:calc(env(safe-area-inset-right) + 12px);bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px;z-index:5}.panorama-bottom-controls button{width:44px;height:44px;min-height:44px;padding:0;border-radius:12px;box-shadow:0 2px 12px #0004;font-size:30px;line-height:1}.panorama-bottom-controls .panorama-back{background:#fff;color:#193d42}.panorama-bottom-controls .panorama-rotate{background:#c62828;color:#fff;font-size:27px}
