@@ -95,12 +95,11 @@ Dentro de una panorámica de dos o más fondos aparece el botón «Invertir orde
 
 Las fotos colocadas dentro de las panorámicas se muestran con un ancho un 50 % mayor que en la versión anterior y un límite de altura proporcional (225 px frente a 150 px). Se aplica a fotos nuevas y ya guardadas, incluidas composiciones dobles, conservando el centro de colocación, fecha y texto. No modifica los archivos originales ni sus datos guardados.
 
-### Versión 0.3.8 · Tren de fotos
 
-En cada panorámica, «Ver tren de fotos» muestra las fotos de ese recuerdo en una fila flotante con perspectiva, fecha y texto. Arrastrar desde una foto o desde el espacio entre ellas mueve la fila en el sentido del dedo; un toque sin arrastre abre la foto original. También permite desplazamiento horizontal y teclado. «Volver a la panorámica» conserva las posiciones guardadas y la dirección de la panorámica. La vista no cambia los datos y no incluye fotos de otras panorámicas. Para añadir o editar fotos se vuelve a la panorámica. Se mantiene la ampliación del 50 % en la vista original.
+### Versión 0.4.1 · Restauración solicitada
 
-### Versión 0.4.0 · Varios trenes opcionales por panorámica
+Se restaura el funcionamiento de la versión 0.3.7: panorámica con fotos en sus puntos, tamaño ampliado un 50 % e «Invertir orden». Se retiran la vista de tren, los grupos, marcadores, botones, diálogos y gestos asociados. Las fotos añadidas durante las versiones posteriores permanecen como fotos normales en sus puntos; no se borra la base de datos ni ninguna imagen.
 
-Gira hasta la zona deseada y pulsa «Crear tren aquí». Ponle nombre y selecciona fotos existentes, o guárdalo vacío. Se guarda un marcador en esa dirección. Puedes crear otros trenes girando hacia otra zona y repitiendo el proceso. Abre cada uno desde su marcador o desde «Ver un tren». Solo aparecen las fotos elegidas para ese tren; arrastrarlas desplaza la fila. «Añadir foto a este tren» carga una imagen nueva con fecha y texto y la incorpora al grupo. «Elegir fotos / Editar tren» permite cambiar nombre y selección, o quitar el tren conservando sus fotos.
+### Versión 0.4.2 · Mover y ampliar fotos
 
-Las fotos siguen visibles y editables en sus puntos originales de la panorámica. Crear trenes es opcional y no agrupa automáticamente todas las fotos existentes. Los trenes se guardan en el dispositivo junto a sus panorámicas y sobreviven al cierre y recarga. Los datos anteriores, sin trenes, siguen siendo compatibles. Invertir los fondos desplaza también los marcadores de tren con su fondo.
+Arrastrar directamente una foto cambia su posición y la guarda al soltar. Un toque breve abre la imagen completa; dos toques aumentan su tamaño en la panorámica, en pasos de un 50 % hasta un ancho máximo del 75 % de la pantalla (una imagen simple). El siguiente doble toque recupera el tamaño inicial, que mantiene la ampliación general del 50 %. Las composiciones dobles conservan su proporción. Mantener pulsado sin arrastrar abre la edición de texto y fecha. No reaparecen trenes.

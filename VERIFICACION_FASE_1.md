@@ -73,10 +73,11 @@ La ubicación GPS real y la concesión del permiso deben comprobarse en el móvi
 
 TypeScript y compilación de producción correctos. Cambio de presentación: factor 1.5 sobre el tamaño guardado de cada foto y máximo de altura de 150 a 225 px. Se conserva el anclaje central y se amplía el margen de representación circular. Sin cambios de almacenamiento. Verificación visual pendiente debido al fallo previo del navegador de pruebas.
 
-### Verificación 0.3.8
 
-TypeScript, compilación de producción y 25 pruebas existentes correctos. Nueva vista adicional de tren: arrastre con captura de puntero y umbral de 9 px para distinguir arrastre de toque; cancelación de gestos, apertura por teclado, fotos dobles y estado vacío. No modifica almacenamiento ni posiciones. Pendiente verificación visual y del gesto en un móvil real: las pruebas automáticas existentes no cubren la interacción del tren y el navegador de pruebas sigue sin estar disponible por el fallo documentado.
+### Verificación 0.4.1
 
-### Verificación 0.4.0
+TypeScript, compilación de producción y 25 pruebas correctos. No quedan referencias a trenes en src. Los archivos JS y CSS compilados tienen los mismos nombres/hash que en 0.3.7 (index-DierNB1t.js e index-Be8WoPds.css), confirmando la restauración del comportamiento previo a los trenes con ampliación del 50 %. Las fotos se siguen leyendo de la misma colección sin filtros de grupos ni borrado de almacenamiento. La comprobación visual en móvil sigue pendiente.
 
-TypeScript, compilación de producción y 29 pruebas correctos. Cuatro pruebas nuevas comprueban varios trenes independientes por panorámica, fotos sueltas, datos antiguos sin trenes, rechazo de fotos de otra panorámica, añadir fotos a un grupo concreto, editar selección, quitar grupo sin borrar fotos, persistencia tras recarga y posición al invertir los fondos (tolerancia numérica para decimales). Se conserva el tamaño ampliado de las fotos. La comprobación visual y los gestos en móvil siguen pendientes por el fallo del navegador de pruebas previamente documentado; no están cubiertos por estas pruebas de datos.
+### Verificación 0.4.2
+
+TypeScript, compilación y 25 pruebas existentes correctos. Los nuevos gestos usan captura de puntero, umbral de 9 px para arrastre, posición actual en referencia para evitar guardar coordenadas atrasadas, separación entre toque sencillo/doble y pulsación larga y cancelación de temporizadores. Posición y tamaño se guardan en la colección de fotos existente. Pendiente comprobar los nuevos gestos en móvil: las pruebas existentes no verifican esta interacción visual.
